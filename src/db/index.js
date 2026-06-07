@@ -7,7 +7,7 @@ const connectDb = async () => {
 
     console.log(`MongooDb connected!! ${connectionInstance.connection.host}`);
   } catch (error) {
-    console.log(error);
+    console.log(`Connection Failed ! , ${error}`);
     process.exit(1)
   }
 };

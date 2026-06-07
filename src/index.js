@@ -8,8 +8,17 @@ dotenv.config({
     path : "./env"
 })
 
+const PORT = process.env.PORT ||8000
 connectDb()
+.then(() => {
+    app.on("error" , (err) => {
+        console(`After connection failed ${err}`)
+    })
 
+    app.listen( PORT , () => {
+        console.log(`App listening at PORT : ${PORT}`)
+    } )
+})
 // const app = express()
 //     (async () => {
 //         try {
