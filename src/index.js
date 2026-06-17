@@ -1,11 +1,13 @@
 
 import dotenv from "dotenv"
-
+import express from "express"
+import connectDb from "./db/index.js"
 dotenv.config({
     path : "./env"
 })
+const app = express()
+const PORT = process.env.PORT || 8000
 
-const PORT = process.env.PORT ||8000
 connectDb()
 .then(() => {
     app.on("error" , (err) => {

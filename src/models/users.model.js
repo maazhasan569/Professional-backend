@@ -50,7 +50,7 @@ usersSchema.pre("save", function (next) {
     next()
 })
 
-usersSchema.method.isPassword = async function (passcode) {
+usersSchema.methods.isPassword = async function (passcode) {
     return await bcrypt.compare(passcode, this.passcode)
 }
 
