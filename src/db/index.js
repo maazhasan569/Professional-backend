@@ -12,10 +12,3 @@ const connectDb = async () => {
   }
 };
 export default connectDb
-
-//try { connect instance = await mongoose.conect(
-//${DBURL}/${DBNAME} )
-//console.log(instance.connection.host)
-//} catch (error) {
-// process.exit(1) 
-//}

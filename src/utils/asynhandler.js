@@ -19,7 +19,7 @@ const asyncHandler = (requestHandler) => {
     }
 }
 
-export default asynchandler
+export default asyncHandler
 
 
 

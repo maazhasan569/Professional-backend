@@ -28,7 +28,7 @@ const usersSchema = new mongoose.Schema({
         required: true
     },
     coverImg: {
-        type: String,
+        type: String, // cloudinary url
     },
     passcode: {
         type: String,
@@ -39,7 +39,10 @@ const usersSchema = new mongoose.Schema({
             type: mongoose.Schema.Types.ObjectId,
             ref: "Video"
         }
-    ]
+    ],
+    refreshToken : {
+        type : String,
+    }
 }, {
     timeStamps: true
 })
