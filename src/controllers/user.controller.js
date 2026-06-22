@@ -5,22 +5,39 @@ import { User } from "../models/users.model.js";
 import fileUpload from "../utils/fileupload.js";
 
 
-const registerUser = asynchandler(async (req, res) => {
+const generateAccessAndRefreshToken = async (userId) => {
+    try {
+        const user = await User.findById(userId) 
+        const accessToken = user.generateAccessToken()
+        const refreshToken = user.generateRefreshToken()
+
+        user.refreshToken = refreshToken
+        await user.save({validateBeforeSave : false})
+
+        return {accessToken , refreshToken}
+    }catch (err) {
+        throw new ApiError(500 , "something went wrong while generating access and refresh token" ,
+            err.message
+        )
+    }
+}
+
+const registerUser = asynchandler(async (req, res, next) => {
 
     //get user data 
-    const { username, email, fullname, passcode } = req.body
-    console.log(email, password)
+    const { username, email, fullName, passcode } = req.body
 
-    const fieldCheck = [username, email, fullname, passcode].some((field) => {
-        !field || field.trim() === ""
+    console.log("req object : ", req.body)
+    const fieldCheck = [username, email, fullName, passcode].some((field) => {
+        return !field || field.trim() === ""
     })
 
     if (fieldCheck) {
         throw new ApiError(400, "All fields are required")
     }
 
-    const exitedUser = await User.find({
-        $or: [{ email }, { password }]
+    const exitedUser = await User.findOne({
+        $or: [{ email }, { passcode }]
     })
 
     if (exitedUser) {
@@ -32,25 +49,28 @@ const registerUser = asynchandler(async (req, res) => {
     // const checkEmail = await User.findOne({email}) this would return an null if nothin found
     //const checkPasscode = await User.find({passcode})
     //if(checkEmail && checkPasscode){
-    // throw new ApiError(400 , "Email or Password is already used")}
+    // throw new ApiError(400 , "Email and Password is already used")}
     //else if (checkPasscode){
     // throw new ApiError(400 , "Passcode already in use" )}
     // else if (checkEmail ) {
     //   throw new ApiError(400 , "email already in use")}
 
     const avatarImgPath = req.files?.avatar[0]?.path
-    const coverImgPath = req.files?.coverImg[0]?.path
+    let coverImgPath;
 
+    if (Array.isArray(req.files.coverImg) && req.files.coverImg.length > 0) {
+        coverImgPath = req.files.coverImg[0].path
+    }
+
+
+    console.log("file OBJ", req.files)
     if (!avatarImgPath) {
         throw new ApiError(400, "Avatar file is required")
     }
     const avatarUrl = await fileUpload(avatarImgPath)
+    console.log("avatar url : ", avatarUrl)
 
-    let coverImgUrl;
-    if (coverImgPath) {
-        coverImgUrl = await fileUpload(coverImgPath)
-    }
-
+    const coverImgUrl = await fileUpload(coverImgPath)
     if (!avatarUrl) {
         throw new ApiError(400, "Avatar file is required")
     }
@@ -59,15 +79,17 @@ const registerUser = asynchandler(async (req, res) => {
     const createUser = new User({
         username: username,
         email: email,
+        fullName: fullName,
         avatar: avatarUrl,
         coverImg: coverImgUrl || "",
         passcode: passcode,
     })
 
     await createUser.save()
-    if (!createUser.isPassword(passcode)) {
-        throw new ApiError(500, "Unsucussful password encyption")
-    }
+    // const isCorrectPassword = createUser.isPassword(passcode)
+    // if () {
+    //     throw new ApiError(500, "Unsucussful password encyption")
+    // }
 
     const isCreatedUser = await User.findById(createUser._id).select(
         "-passcode -refreshToken"
@@ -84,5 +106,64 @@ const registerUser = asynchandler(async (req, res) => {
             isCreatedUser)
 
     )
+})
+
+const logInUser = asynchandler(async (req,res,next) => {
+    //req body => data
+    //email , pass , username
+    //if data arrives
+    // hand over token
+    //thro refresh token
+    //send cookies
+    //send response
+
+    const {email , passcode , username} = req.body
+
+    if(!email || !username) {
+        throw new ApiError(400 , "Pls either email or username")
+    }
+
+    const isUser = await User.findOne({
+        $or : [{email} , {username}]
+    })
+
+    if(!isUser) {
+        throw new Error(400 , "User not registered")
+    }
+
+    const isPasswordValid =  await isUser.isPassword(passcode)
+
+    if(!isPasswordValid) {
+        throw new ApiError(400 , "Password not found")
+    }
+
+    const {accessToken , refreshToken} =  await generateAccessAndRefreshToken(isUser._id)
+
+    //optional 
+    const loggedInUser = await User.findById(isUser._id).select(
+        "-passcode -refreshToken"
+    )
+
+    const options = {
+        httpOnly : true,
+        secure : true,
+    }
+
+    return res.status(200)
+    .cookie("accessToken" , accessToken , options)//15d
+    .cookie("refreshToken", refreshToken , options)//60d
+    .json(
+        new ApiResponse(
+            200 ,
+            {
+                user : loggedInUser , accessToken , refreshToken 
+            },
+            "User logged in successfully"
+        )
+    )
+})
+
+const logOut = asynchandler(async (req,res) => {
+    
 })
 export default registerUser

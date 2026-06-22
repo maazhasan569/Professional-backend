@@ -17,4 +17,6 @@ const router = Router()
         ,
         registerUser)
 
+        
+
 export default router
