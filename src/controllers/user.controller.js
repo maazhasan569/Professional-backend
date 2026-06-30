@@ -191,7 +191,7 @@ const logOut = asynchandler(async (req, res) => {
         )
 })
 
-const refreshAccessincomingRefreshToken = asynchandler(async (req, res) => {
+const refreshAccessToken = asynchandler(async (req, res) => {
     //recieve incomingRefreshToken from refreshincomingRefreshToken
     //check if there is a incomingRefreshToken
     //if incomingRefreshToken validate
@@ -234,4 +234,4 @@ const refreshAccessincomingRefreshToken = asynchandler(async (req, res) => {
 
 
 })
-export { registerUser, logInUser, logOut }
+export { registerUser, logInUser, logOut , refreshAccessToken }
