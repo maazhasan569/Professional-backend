@@ -18,7 +18,7 @@ const router = Router()
         ,
         registerUser)
 
-    router.route("/login" , logInUser)
-    router.route("/logout" , verifyJwt , logOut)
+    router.route("/login").post(logInUser)
+    router.route("/logout").post(verifyJwt , logOut)
 
 export default router
