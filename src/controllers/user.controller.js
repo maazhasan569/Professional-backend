@@ -120,7 +120,7 @@ const logInUser = asynchandler(async (req,res,next) => {
     const {email , passcode , username} = req.body
 
     if(!email || !username) {
-        throw new ApiError(400 , "Pls either email or username")
+        throw new ApiError(400 , "Pls enter either email or username")
     }
 
     const isUser = await User.findOne({
@@ -164,6 +164,29 @@ const logInUser = asynchandler(async (req,res,next) => {
 })
 
 const logOut = asynchandler(async (req,res) => {
-    
+    await req.user.findByIdAndUpdate(
+        req.user._id , 
+        {
+            $set : {
+                refreshToken : undefined
+            }
+        }
+    )
+
+    const options = {
+        httpOnly : true,
+        secure : true
+    }
+
+    res.status(200)
+    .clearCookie("accessToken" , options)
+    .clearCookie("refreshToken" ,options )
+    .json(
+        new ApiResponse(
+            200 ,
+            "successfuly logged out",
+            {}
+        )
+    )
 })
-export default registerUser
+export {registerUser , logInUser , logOut}
