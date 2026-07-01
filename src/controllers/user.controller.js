@@ -61,7 +61,7 @@ const registerUser = asynchandler(async (req, res, next) => {
 
     if (Array.isArray(req.files.coverImg) && req.files.coverImg.length > 0) {
         coverImgPath = req.files.coverImg[0].path
-    }
+    }//check if there is an cover Img
 
 
     console.log("file OBJ", req.files)
@@ -231,24 +231,79 @@ const refreshAccessToken = asynchandler(async (req, res) => {
     } catch (error) {
         throw new ApiError(500, error?.message || "invalid refresh token")
     }
-
-
-    const changeCurrentPassword = asynchandler(async(req,res) => {
-        const {oldPasssword , newPassword} = req.body;
-        const user = await User.findById(req.user?._id)
-        const isOldPasswordCorrect = await User.isPassword(oldPasssword)
-        if(!isOldPasswordCorrect) {
-            throw new ApiError(400 , "Incorrect old Password")
-        }
-        user.passcode = newPassword
-        user.save({validateBeforeSave : false})
-
-        return res.status(200).json(
-            new ApiResponse(200 , "old password changed" , {})
-        )
-        
-        
-
-    })
 })
-export { registerUser, logInUser, logOut , refreshAccessToken }
+
+const changeCurrentPassword = asynchandler(async (req, res) => {
+    const { oldPasssword, newPassword } = req.body;
+    const user = await User.findById(req.user?._id)
+    const isOldPasswordCorrect = await User.isPassword(oldPasssword)
+    if (!isOldPasswordCorrect) {
+        throw new ApiError(400, "Incorrect old Password")
+    }
+    user.passcode = newPassword
+    user.save({ validateBeforeSave: false })
+
+    return res.status(200).json(
+        new ApiResponse(200, "old password changed", {})
+    )
+
+})
+
+const getCurrentUser = asynchandler(async (req, res) => {
+    return res.status(200).json(
+        new ApiResponse(200, "user data found", req.user)
+    )
+})
+
+const updateUserDetails = asynchandler(async (req, res) => {
+    const { fullName, email } = req.body;
+    if (!email && !fullName) {
+        throw new ApiError(400, "both fullname and email required!")
+    }
+    const updatedUser = await User.findByIdAndUpdate(
+        req.user._id,
+        {
+            $set: {
+                fullName,
+                email,
+            }
+        },
+        { new: true }
+    ).select("-passcode")
+
+    return res.status(200).json(
+        new ApiResponse(200, "user details updated", updatedUser)
+    )
+})
+
+const updatedUserAvatar = asynchandler(async (req, res) => {
+    const avatarFilePath = req.file?.path
+    if (!avatarFilePath) {
+        throw new ApiError(400, "avatar required")
+    }
+
+    const avatarFileUrl = await fileUpload(avatarFilePath)//should we apply conditional statement hear
+
+    const uploadedFile = await findByIdAndUpdate(
+        req.user._id,
+        {
+            $set: {
+                avatar: avatarFileUrl
+            }
+        },
+        { new: true }
+    ).select("-passcode")
+
+    return res.status(200).json(
+        new ApiResponse(200, "Avatar file uploaded", uploadedFile)
+    )
+})
+export {
+    registerUser,
+    logInUser,
+    logOut,
+    refreshAccessToken,
+    changeCurrentPassword,
+    updateUserDetails,
+    getCurrentUser
+}
