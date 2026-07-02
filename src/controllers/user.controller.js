@@ -282,7 +282,10 @@ const updatedUserAvatar = asynchandler(async (req, res) => {
         throw new ApiError(400, "avatar required")
     }
 
-    const avatarFileUrl = await fileUpload(avatarFilePath)//should we apply conditional statement hear
+    const avatarFileUrl = await fileUpload(avatarFilePath)
+    if(!avatarFileUrl){
+        throw new ApiError(500 , "cloudinary upload failed , try again")
+    }
 
     const uploadedFile = await findByIdAndUpdate(
         req.user._id,
@@ -298,6 +301,34 @@ const updatedUserAvatar = asynchandler(async (req, res) => {
         new ApiResponse(200, "Avatar file uploaded", uploadedFile)
     )
 })
+
+const updatedUserCoverImg = asynchandler(async(req, res) => {
+    const coverImgFilePath = req.file?.path
+    if (!coverImgFilePath) {
+        throw new ApiError(400, "coverImg required")
+    }
+
+    const coverImgFileUrl = await fileUpload(coverImgFilePath)
+    if(!coverFileUrl){
+        throw new ApiError(500 , "cloudinary upload failed , try again")
+    }
+
+    const uploadedFile = await findByIdAndUpdate(
+        req.user._id,
+        {
+            $set: {
+                coverImg : coverImgFileUrl
+            }
+        },
+        { new: true }
+    ).select("-passcode")
+
+    return res.status(200).json(
+        new ApiResponse(200, "coverImg file uploaded", uploadedFile)
+    )
+})
+
+
 export {
     registerUser,
     logInUser,
@@ -305,5 +336,7 @@ export {
     refreshAccessToken,
     changeCurrentPassword,
     updateUserDetails,
-    getCurrentUser
+    getCurrentUser,
+    updatedUserAvatar,
+    updatedUserCoverImg
 }
