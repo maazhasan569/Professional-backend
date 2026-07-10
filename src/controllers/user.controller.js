@@ -9,17 +9,18 @@ import mongoose from "mongoose";
 
 const generateAccessAndRefreshToken = async (userId) => {
     try {
+        console.log(userId)
         const user = await User.findById(userId)
         const accessToken = user.generateAccessToken()
         const refreshToken = user.generateRefreshToken()
 
+        console.log({accessToken , refreshToken})
         user.refreshToken = refreshToken
         await user.save({ validateBeforeSave: false })
-
+        
         return { accessToken, refreshToken }
     } catch (err) {
-        throw new ApiError(500, "something went wrong while generating access and refresh incomingRefreshToken",
-            err.message
+        throw new ApiError(500,err.message
         )
     }
 }
@@ -27,7 +28,7 @@ const generateAccessAndRefreshToken = async (userId) => {
 const registerUser = asynchandler(async (req, res, next) => {
 
     //get user data 
-    const { username, email, fullName, passcode } = req.body
+    const { username, email, fullName, passcode } = req.body;
 
     console.log("req object : ", req.body)
     const fieldCheck = [username, email, fullName, passcode].some((field) => {
@@ -94,7 +95,7 @@ const registerUser = asynchandler(async (req, res, next) => {
     // }
 
     const isCreatedUser = await User.findById(createUser._id).select(
-        "-passcode -refreshincomingRefreshToken"
+        "-passcode "
     )
 
     if (!isCreatedUser) {
@@ -110,7 +111,7 @@ const registerUser = asynchandler(async (req, res, next) => {
     )
 })
 
-const logInUser = asynchandler(async (req, res, next) => {
+const logInUser = asynchandler(async (req, res) => {
     //req body => data
     //email , pass , username
     //if data arrives
@@ -119,31 +120,27 @@ const logInUser = asynchandler(async (req, res, next) => {
     //send cookies
     //send response
 
-    const { email, passcode, username } = req.body
-
-    if (!email || !username) {
+    const { email, passcode, username } = req.body;
+    //
+    if (!email && !username) {
         throw new ApiError(400, "Pls enter either email or username")
     }
-
     const isUser = await User.findOne({
-        $or: [{ email }, { username }]
+        $or : [{username} , {email}]
     })
-
-    if (!isUser) {
-        throw new Error(400, "User not registered")
-    }
-
+    console.log(isUser)
     const isPasswordValid = await isUser.isPassword(passcode)
 
     if (!isPasswordValid) {
         throw new ApiError(400, "Password not found")
     }
-
+    
     const { accessToken, refreshToken } = await generateAccessAndRefreshToken(isUser._id)
-
+    console.log(`accesstoken = ${accessToken}`)
+    console.log(`refreshToken = ${refreshToken}`)
     //optional 
     const loggedInUser = await User.findById(isUser._id).select(
-        "-passcode -refreshincomingRefreshToken"
+        "-passcode -refreshToken"
     )
 
     const options = {
@@ -152,13 +149,13 @@ const logInUser = asynchandler(async (req, res, next) => {
     }
 
     return res.status(200)
-        .cookie("accessincomingRefreshToken", accessincomingRefreshToken, options)//15d
-        .cookie("refreshincomingRefreshToken", refreshincomingRefreshToken, options)//60d
+        .cookie("accessToken", accessToken, options)//15d
+        .cookie("refreshToken", refreshToken, options)//60d
         .json(
             new ApiResponse(
                 200,
                 {
-                    user: loggedInUser, accessincomingRefreshToken, refreshincomingRefreshToken
+                    user: loggedInUser
                 },
                 "User logged in successfully"
             )
@@ -166,11 +163,15 @@ const logInUser = asynchandler(async (req, res, next) => {
 })
 
 const logOut = asynchandler(async (req, res) => {
-    await req.user.findByIdAndUpdate(
+
+    if(!req.user){
+        throw new ApiError(400 , "user not registered")
+    }
+    await User.findByIdAndUpdate(
         req.user._id,
         {
             $set: {
-                refreshincomingRefreshToken: undefined
+                refreshToken: 1
             }
         }
     )
@@ -181,8 +182,8 @@ const logOut = asynchandler(async (req, res) => {
     }
 
     res.status(200)
-        .clearCookie("accessincomingRefreshToken", options)
-        .clearCookie("refreshincomingRefreshToken", options)
+        .clearCookie("accessToken", options)
+        .clearCookie("refreshToken", options)
         .json(
             new ApiResponse(
                 200,
@@ -237,7 +238,7 @@ const refreshAccessToken = asynchandler(async (req, res) => {
 const changeCurrentPassword = asynchandler(async (req, res) => {
     const { oldPasssword, newPassword } = req.body;
     const user = await User.findById(req.user?._id)
-    const isOldPasswordCorrect = await User.isPassword(oldPasssword)
+    const isOldPasswordCorrect = await user.isPassword(oldPasssword)
     if (!isOldPasswordCorrect) {
         throw new ApiError(400, "Incorrect old Password")
     }
@@ -270,7 +271,7 @@ const updateUserDetails = asynchandler(async (req, res) => {
             }
         },
         { new: true }
-    ).select("-passcode")
+    ).select("-passcode -refreshToken")
 
     return res.status(200).json(
         new ApiResponse(200, "user details updated", updatedUser)
@@ -288,7 +289,7 @@ const updatedUserAvatar = asynchandler(async (req, res) => {
         throw new ApiError(500 , "cloudinary upload failed , try again")
     }
 
-    const uploadedFile = await findByIdAndUpdate(
+    const uploadedFile = await User.findByIdAndUpdate(
         req.user._id,
         {
             $set: {
@@ -299,7 +300,7 @@ const updatedUserAvatar = asynchandler(async (req, res) => {
     ).select("-passcode")
 
     return res.status(200).json(
-        new ApiResponse(200, "Avatar file uploaded", uploadedFile)
+        new ApiResponse(200, "Avatar file uploaded", uploadedFile.avatar)
     )
 })
 
@@ -310,11 +311,11 @@ const updatedUserCoverImg = asynchandler(async(req, res) => {
     }
 
     const coverImgFileUrl = await fileUpload(coverImgFilePath)
-    if(!coverFileUrl){
+    if(!coverImgFileUrl){
         throw new ApiError(500 , "cloudinary upload failed , try again")
     }
 
-    const uploadedFile = await findByIdAndUpdate(
+    const uploadedFile = await User.findByIdAndUpdate(
         req.user._id,
         {
             $set: {
@@ -322,10 +323,10 @@ const updatedUserCoverImg = asynchandler(async(req, res) => {
             }
         },
         { new: true }
-    ).select("-passcode")
+    ).select("-passcode -refreshToken")
 
     return res.status(200).json(
-        new ApiResponse(200, "coverImg file uploaded", uploadedFile)
+        new ApiResponse(200, "coverImg file uploaded", uploadedFile.avatar)
     )
 })
 
@@ -345,7 +346,7 @@ const getUserChannelProfile = asynchandler(async(req,res) => {
             $lookup : {
                 from : "subscriptions",
                 localField : "_id",
-                foreignField : "channel",
+                foreignField : "channel", 
                 as : "subscribers"
             }
         },

@@ -20,11 +20,11 @@ const router = Router()
 
     router.route("/login").post(logInUser)
     router.route("/logout").post(verifyJwt , logOut)
-    router.route("refresh-token").post(refreshAccessToken)
+    router.route("/refresh-token").post(refreshAccessToken)
     router.route("/update-password").put(verifyJwt,changeCurrentPassword)
     router.route("/update-details").put(verifyJwt,updateUserDetails)
     router.route("/currentuser").post(verifyJwt,getCurrentUser)
-    router.route("/updated-avatarimg").patch(
+    router.route("/update-avatarimg").patch(
         verifyJwt,
         upload.single("avatar"),
         updatedUserAvatar)
