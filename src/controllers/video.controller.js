@@ -150,15 +150,14 @@ const AddVideoDetails = asyncHandler(async (req, res) => {
 const deleteVideo = asyncHandler(async (req, res) => {
     const { videoId } = req.params
     //TODO: delete video
-    const videoData = await findVideo(videoId)
-    findByIdAndDelete(
-        videoData._id,
-        {
-            $set: {
-                videoData
-            }
-        },
-
+    
+    const deletedVideo = await Video.findByIdAndDelete(videoId)
+    if(!deleteVideo){
+        throw new ApiError(500 , "failed to delete video from db. try again!")
+    }
+    res.status(200)
+    .json(
+        new ApiResponse(200 , "Video deleted!" , deleteVideo)
     )
 })
 
