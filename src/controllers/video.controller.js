@@ -45,12 +45,9 @@ const getAllVideos = asyncHandler(async (req, res) => {
     } else {
         sortObj.createdAt = -1
     }
-    const totalDoc = await Video.countDocument(filter)
+    const totalDoc = await Video.countDocuments(filter)
     const totalPages = Math.ceil(totalDoc / limit)
-    if (!totalDoc) {
-        throw new ApiError(400, `can't find videos of ${query}`)
-    }
-
+    if (!totalDoc) return {}
     const fetchedVideos = await Video
         .find(filter)
         .sort(sortObj)
@@ -74,25 +71,26 @@ const publishAVideo = asyncHandler(async (req, res) => {
         throw new ApiError(400, "No Video file added")
     }
 
-    const videoFile = await fileUpload(videoPath)
+    const videoFileUrl = await fileUpload(videoPath)
     const saveVideo = await Video.create({
-        videoFile
+        videoFileUrl
     })
     if (!saveVideo) {
         throw new ApiError(500, "failed to save video in db")
     }
-    return res.status(
-        new ApiResponse(200, "video sucessfully saved!", saveVideo)
+    return res.status(200)
+    .json(
+        new ApiResponse(200, "video sucessfully saved!", {videoFileUrl})
     )
 
 })
 
-const uploadVideoThumnail = asyncHandler(async (req, res) => {
+const uploadVideoThumbnail = asyncHandler(async (req, res) => {
 
     const thumbnailPath = req.file.path;
     const { videoId } = req.params
     if (!thumbnailPath) {
-        throw new ApiError(400, "thumnail file is required")
+        throw new ApiError(400, "thumbnail file is required")
     }
     const thumbnailFileUrl = await fileUpload(thumbnailPath)
     const findAndAddThumbnail = await Video.findByIdAndUpdate(
@@ -106,10 +104,10 @@ const uploadVideoThumnail = asyncHandler(async (req, res) => {
     )
 
     if (!findAndAddThumbnail) {
-        throw new ApiError(500, "thumbnail failed to upload in db")
+        throw new ApiError(500, "thumbnail failed to be uploaded in db")
     }
     return res.status(200).json(
-        new ApiResponse(200, "Thummnail file uploaded in db", findAndAddThumbnail)
+        new ApiResponse(200, "Thummnail file uploaded in db",{thumbnailFileUrl})
     )
 
 
@@ -127,11 +125,11 @@ const getVideoById = asyncHandler(async (req, res) => {
         )
 })
 
-const AddVideoDetials = asyncHandler(async (req, res) => {
+const AddVideoDetails = asyncHandler(async (req, res) => {
     //TODO: update video details like title, description, thumbnail
     const { title, description } = req.body
     const { videoId } = req.params
-    if (!title && !description) {
+    if (!title || !description) {
         throw new ApiError(400, "title and description required")
     }
     const videoData = await findVideo(videoId)
