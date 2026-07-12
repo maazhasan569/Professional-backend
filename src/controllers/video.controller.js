@@ -5,15 +5,16 @@ import { ApiError } from "../utils/ApiError.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
 import { asyncHandler } from "../utils/asyncHandler.js"
 import { uploadOnCloudinary } from "../utils/cloudinary.js"
+import fileUpload from "../utils/fileupload.js"
 
 
 async function findVideo(id) {
-    if(!isValidObjectId(id)){
-        throw new ApiError(400,"Invalid objectId")
+    if (!isValidObjectId(id)) {
+        throw new ApiError(400, "Invalid objectId")
     }
-    const findVideo = await Video.findById({_id : id})
-    if(!findVideo){
-        throw new ApiError(400 , "Video not found or has been deleted")
+    const findVideo = await Video.findById({ _id: id })
+    if (!findVideo) {
+        throw new ApiError(400, "Video not found or has been deleted")
     }
     return findVideo
 }
@@ -41,7 +42,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
     if (sortBy) {
         const sortDirection = sortType === "desc" ? -1 : 1;
         sortObj[sortBy] = sortDirection
-    }else{
+    } else {
         sortObj.createdAt = -1
     }
     const totalDoc = await Video.countDocument(filter)
@@ -66,10 +67,54 @@ const getAllVideos = asyncHandler(async (req, res) => {
 })
 
 const publishAVideo = asyncHandler(async (req, res) => {
-    const { title, description } = req.body
+
     // TODO: get video, upload to cloudinary, create video
+    const videoPath = req.file.path;
+    if (!videoPath) {
+        throw new ApiError(400, "No Video file added")
+    }
+
+    const videoFile = await fileUpload(videoPath)
+    const saveVideo = await Video.create({
+        videoFile
+    })
+    if (!saveVideo) {
+        throw new ApiError(500, "failed to save video in db")
+    }
+    return res.status(
+        new ApiResponse(200, "video sucessfully saved!", saveVideo)
+    )
+
 })
 
+const uploadVideoThumnail = asyncHandler(async (req, res) => {
+
+    const thumbnailPath = req.file.path;
+    const { videoId } = req.params
+    if (!thumbnailPath) {
+        throw new ApiError(400, "thumnail file is required")
+    }
+    const thumbnailFileUrl = await fileUpload(thumbnailPath)
+    const findAndAddThumbnail = await Video.findByIdAndUpdate(
+        videoId,
+        {
+            $set: {
+                thumbnail: thumbnailFileUrl
+            }
+        },
+        { new: true }
+    )
+
+    if (!findAndAddThumbnail) {
+        throw new ApiError(500, "thumbnail failed to upload in db")
+    }
+    return res.status(200).json(
+        new ApiResponse(200, "Thummnail file uploaded in db", findAndAddThumbnail)
+    )
+
+
+
+})
 const getVideoById = asyncHandler(async (req, res) => {
     const { videoId } = req.params
     //TODO: get video by id
@@ -77,22 +122,21 @@ const getVideoById = asyncHandler(async (req, res) => {
     //fetch out the id from data and match
     const videoData = await findVideo(videoId)
     return res.status(200)
-    .json(
-        new ApiResponse(200,"video found" , videoData)
-    )
+        .json(
+            new ApiResponse(200, "video found", videoData)
+        )
 })
 
-const updateVideo = asyncHandler(async (req, res) => {
-    const { videoId } = req.params
+const AddVideoDetials = asyncHandler(async (req, res) => {
     //TODO: update video details like title, description, thumbnail
-    const {title, description} = req.body
-
-    if(!title && !description) {
-        throw new ApiError(400 , "title and description required")
+    const { title, description } = req.body
+    const { videoId } = req.params
+    if (!title && !description) {
+        throw new ApiError(400, "title and description required")
     }
     const videoData = await findVideo(videoId)
     const update = await Video.findByIdAndUpdate(
-         videoData._id,
+        videoData._id,
         {
             $set: {
                 title,
@@ -102,7 +146,7 @@ const updateVideo = asyncHandler(async (req, res) => {
         { new: true }
 
     )
-    
+
 })
 
 const deleteVideo = asyncHandler(async (req, res) => {
@@ -112,11 +156,11 @@ const deleteVideo = asyncHandler(async (req, res) => {
     findByIdAndDelete(
         videoData._id,
         {
-            $set : {
+            $set: {
                 videoData
             }
         },
-        
+
     )
 })
 
