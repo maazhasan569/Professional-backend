@@ -7,6 +7,16 @@ import { asyncHandler } from "../utils/asyncHandler.js"
 import { uploadOnCloudinary } from "../utils/cloudinary.js"
 
 
+async function findVideo(id) {
+    if(!isValidObjectId(id)){
+        throw new ApiError(400,"Invalid objectId")
+    }
+    const findVideo = await Video.findById({_id : id})
+    if(!findVideo){
+        throw new ApiError(400 , "Video not found or has been deleted")
+    }
+    return findVideo
+}
 const getAllVideos = asyncHandler(async (req, res) => {
     const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query
     //TODO: get all videos based on 
@@ -28,10 +38,11 @@ const getAllVideos = asyncHandler(async (req, res) => {
     }
 
     const skip = (page - 1) * limit
-    if (sort) {
+    if (sortBy) {
         const sortDirection = sortType === "desc" ? -1 : 1;
         sortObj[sortBy] = sortDirection
-        sortObj[sortType] = "createdAt"
+    }else{
+        sortObj.createdAt = -1
     }
     const totalDoc = await Video.countDocument(filter)
     const totalPages = Math.ceil(totalDoc / limit)
@@ -62,22 +73,53 @@ const publishAVideo = asyncHandler(async (req, res) => {
 const getVideoById = asyncHandler(async (req, res) => {
     const { videoId } = req.params
     //TODO: get video by id
+    //frontend would send the choosed video along with its data
+    //fetch out the id from data and match
+    const videoData = await findVideo(videoId)
+    return res.status(200)
+    .json(
+        new ApiResponse(200,"video found" , videoData)
+    )
 })
 
 const updateVideo = asyncHandler(async (req, res) => {
     const { videoId } = req.params
     //TODO: update video details like title, description, thumbnail
+    const {title, description} = req.body
 
+    if(!title && !description) {
+        throw new ApiError(400 , "title and description required")
+    }
+    const videoData = await findVideo(videoId)
+    const update = await Video.findByIdAndUpdate(
+         videoData._id,
+        {
+            $set: {
+                title,
+                description,
+            }
+        },
+        { new: true }
+
+    )
+    
 })
 
 const deleteVideo = asyncHandler(async (req, res) => {
     const { videoId } = req.params
     //TODO: delete video
+    const videoData = await findVideo(videoId)
+    findByIdAndDelete(
+        videoData._id,
+        {
+            $set : {
+                videoData
+            }
+        },
+        
+    )
 })
 
-const togglePublishStatus = asyncHandler(async (req, res) => {
-    const { videoId } = req.params
-})
 
 export {
     getAllVideos,
