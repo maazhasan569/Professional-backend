@@ -1,4 +1,4 @@
-import asynchandler from "../utils/asynhandler.js";
+import asyncHandler from "../utils/asynhandler.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import ApiError from "../utils/ApiError.js";
 import { User } from "../models/users.model.js";
@@ -25,7 +25,7 @@ const generateAccessAndRefreshToken = async (userId) => {
     }
 }
 
-const registerUser = asynchandler(async (req, res, next) => {
+const registerUser = asyncHandler(async (req, res, next) => {
 
     //get user data 
     const { username, email, fullName, passcode } = req.body;
@@ -111,7 +111,7 @@ const registerUser = asynchandler(async (req, res, next) => {
     )
 })
 
-const logInUser = asynchandler(async (req, res) => {
+const logInUser = asyncHandler(async (req, res) => {
     //req body => data
     //email , pass , username
     //if data arrives
@@ -162,7 +162,7 @@ const logInUser = asynchandler(async (req, res) => {
         )
 })
 
-const logOut = asynchandler(async (req, res) => {
+const logOut = asyncHandler(async (req, res) => {
 
     if(!req.user){
         throw new ApiError(400 , "user not registered")
@@ -193,7 +193,7 @@ const logOut = asynchandler(async (req, res) => {
         )
 })
 
-const refreshAccessToken = asynchandler(async (req, res) => {
+const refreshAccessToken = asyncHandler(async (req, res) => {
     //recieve incomingRefreshToken from refreshincomingRefreshToken
     //check if there is a incomingRefreshToken
     //if incomingRefreshToken validate
@@ -235,7 +235,7 @@ const refreshAccessToken = asynchandler(async (req, res) => {
     }
 })
 
-const changeCurrentPassword = asynchandler(async (req, res) => {
+const changeCurrentPassword = asyncHandler(async (req, res) => {
     const { oldPasssword, newPassword } = req.body;
     const user = await User.findById(req.user?._id)
     const isOldPasswordCorrect = await user.isPassword(oldPasssword)
@@ -251,13 +251,13 @@ const changeCurrentPassword = asynchandler(async (req, res) => {
 
 })
 
-const getCurrentUser = asynchandler(async (req, res) => {
+const getCurrentUser = asyncHandler(async (req, res) => {
     return res.status(200).json(
         new ApiResponse(200, "user data found", req.user)
     )
 })
 
-const updateUserDetails = asynchandler(async (req, res) => {
+const updateUserDetails = asyncHandler(async (req, res) => {
     const { fullName, email } = req.body;
     if (!email && !fullName) {
         throw new ApiError(400, "both fullname and email required!")
@@ -278,7 +278,7 @@ const updateUserDetails = asynchandler(async (req, res) => {
     )
 })
 
-const updatedUserAvatar = asynchandler(async (req, res) => {
+const updatedUserAvatar = asyncHandler(async (req, res) => {
     const avatarFilePath = req.file?.path
     if (!avatarFilePath) {
         throw new ApiError(400, "avatar required")
@@ -304,7 +304,7 @@ const updatedUserAvatar = asynchandler(async (req, res) => {
     )
 })
 
-const updatedUserCoverImg = asynchandler(async(req, res) => {
+const updatedUserCoverImg = asyncHandler(async(req, res) => {
     const coverImgFilePath = req.file?.path
     if (!coverImgFilePath) {
         throw new ApiError(400, "coverImg required")
@@ -330,7 +330,7 @@ const updatedUserCoverImg = asynchandler(async(req, res) => {
     )
 })
 
-const getUserChannelProfile = asynchandler(async(req,res) => {
+const getUserChannelProfile = asyncHandler(async(req,res) => {
     const {username} = req.params
     if(!username?.trim()) {
         throw new ApiError(400 , "Username not in params")
@@ -399,7 +399,7 @@ const getUserChannelProfile = asynchandler(async(req,res) => {
     )
 })
 
-const getHistory = asynchandler( async(req,res) => {
+const getHistory = asyncHandler( async(req,res) => {
     const user = await User.aggregate([
         {
             $match : {
