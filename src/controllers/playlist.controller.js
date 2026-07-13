@@ -3,11 +3,57 @@ import {Playlist} from "../models/playlist.model.js"
 import {ApiError} from "../utils/ApiError.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
 import {asyncHandler} from "../utils/asyncHandler.js"
+import { Video } from "../models/videos.model.js"
 
 
 const createPlaylist = asyncHandler(async (req, res) => {
     const {name, description} = req.body
+    const videoIds = []
 
+    if(!videoIds?.length){
+        throw ApiError (400 , "Video required to create playlist")
+    }
+    const isValidVideoId = videoIds.filter(ids => !isValidObjectId(ids))
+    if(isValidObjectId?.length){
+        throw new ApiError(500 , "Invalid ObjId of video")
+    }
+    const playlistVideo = await Video.aggregate([
+        {
+            $match : {
+                _id : {$in : new mongoose.Types.ObjectId(videoIds)}
+            }
+        },
+        {
+            $project : {
+                id : 1
+            }
+        }
+    ])
+    const availableVideo = playlistVideo.map((ids) => {
+        return ids;
+    
+    })
+    const UnAvailableVideo = playlistVideo.filter((Ids) => {
+        !availableVideo.includes(ids.toString())
+    })
+    
+    const playlist = await Playlist.create({
+        name, 
+        description, 
+        videos  : availableVideo,
+        owner : req.user?.username
+    })
+
+    if(!playlist) {
+        throw new ApiError(500 , "failed to create the playlist")
+    }
+
+    return res.status(200)
+    .json(
+        new ApiResponse(200 , "Playlist created" , {
+            availableVideo,UnAvailableVideo,playlist,
+        })
+    )
     //TODO: create playlist
 })
 
