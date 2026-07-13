@@ -41,7 +41,7 @@ const createPlaylist = asyncHandler(async (req, res) => {
         name, 
         description, 
         videos  : availableVideo,
-        owner : req.user?.username
+        owner : req.user
     })
 
     if(!playlist) {
@@ -58,8 +58,12 @@ const createPlaylist = asyncHandler(async (req, res) => {
 })
 
 const getUserPlaylists = asyncHandler(async (req, res) => {
-    const {userId} = req.params
+    
+    const userPlaylists = await Video.find({
+        "owner._id" : req.user._id
+    })
     //TODO: get user playlists
+    return res.status(200 , userPlaylists? "Playlist fetched" : "No playlist created", userPlaylists)
 })
 
 const getPlaylistById = asyncHandler(async (req, res) => {
