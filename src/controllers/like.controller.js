@@ -1,68 +1,71 @@
-import mongoose, {isValidObjectId} from "mongoose"
-import {Like} from "../models/like.model.js"
-import {ApiError} from "../utils/ApiError.js"
-import {ApiResponse} from "../utils/ApiResponse.js"
-import {asyncHandler} from "../utils/asyncHandler.js"
+import mongoose, { isValidObjectId } from "mongoose"
+import { Like } from "../models/like.model.js"
+import { ApiError } from "../utils/ApiError.js"
+import { ApiResponse } from "../utils/ApiResponse.js"
+import { asyncHandler } from "../utils/asyncHandler.js"
 
 const toggleVideoLike = asyncHandler(async (req, res) => {
-    const {videoId} = req.params
-    const {isLike} = req.body
-    //TODO: toggle like on video
-    //check if id valid
-    //create like
-    //add video
-    //btn of like clicked -> true
-    //call the api with islike boolean val
-    if(!isValidObjectId(videoId)){
-        throw new ApiError(400 , "Invalid videoId")
+    const { videoId } = req.params
+    const userId = req.user?._id
+
+    if (!isValidObjectId(videoId)) {
+        throw new ApiError(400, "Invalid videoId")
     }
-    let toggleLike;
-    if(isLike){
-      toggleLike = await Like.create({
-        video : videoId,
-        likedBy : req.user._id
+
+
+    const existingLike = await Like.findOne({
+        video: videoId,
+        likedBy: userId
     })
 
-    if(!toggleLike){
-        throw new ApiError(500 , "An error occured while saving video Like")
-    }
-    }else{
-        const likedVideo = await Like.find({video : videoId})
-        toggleLike = await likedVideo.deleteOne()
-        
+    if (existingLike) {
 
+        await Like.findByIdAndDelete(existingLike._id)
+        return res
+            .status(200)
+            .json(new ApiResponse(200, "Video unliked successfully", null))
+    } else {
+
+        const newLike = await Like.create({
+            video: videoId,
+            likedBy: userId
+        })
+        return res
+            .status(201)
+            .json(new ApiResponse(201, "Video liked successfully", newLike))
     }
-    return res.status(200)
-    .json(
-        new ApiResponse(200,isLike? "Video Liked generated" : "Video unliked " , toggleLike)
-    )
 })
 
 const toggleCommentLike = asyncHandler(async (req, res) => {
-    const {commentId} = req.params
-    //TODO: toggle like on comment
-    if(!isValidObjectId(commentId)){
-        throw new ApiError(400 , "Invalid commendId")
+    const { commentId } = req.params
+    const userId = req.user?._id
+
+    if (!isValidObjectId(commentId)) {
+        throw new ApiError(400, "Invalid commentId")
     }
-    let toggleLike;
-    if(isLike){
-      toggleLike = await Like.create({
-        comment : commentId,
-        likedBy : req.user._id
+
+    // Check if the user has already liked this comment
+    const existingLike = await Like.findOne({
+        comment: commentId,
+        likedBy: userId
     })
 
-    if(!toggleLike){
-        throw new ApiError(500 , "An error occured while saving comment Like")
+    if (existingLike) {
+        // Unlike
+        await Like.findByIdAndDelete(existingLike._id)
+        return res
+            .status(200)
+            .json(new ApiResponse(200, "Comment unliked successfully", null))
+    } else {
+        // Like
+        const newLike = await Like.create({
+            comment: commentId,
+            likedBy: userId
+        })
+        return res
+            .status(201)
+            .json(new ApiResponse(201, "Comment liked successfully", newLike))
     }
-    }else{
-        const likedComment = await Like.find({comment : commentIdId})
-        toggleLike = await likedComment.deleteOne()
-    }
-    
-     return res.status(200)
-    .json(
-        new ApiResponse(200,isLike? "Comment Liked generated" : "Comment unliked " , toggleLike)
-    )
 })
 
 
@@ -73,23 +76,24 @@ const getLikedVideos = asyncHandler(async (req, res) => {
     //query to check if the userId matches in likeschema
 
     const userLike = await Like.find({
-        likedBy : req.user._id
-    })
+        likedBy: req.user._id,
+        video: { $exists: true }
+    }).populate("video")
 
-    const likedVideos = userLike.filter((videoLikes) =>{ 
+    const likedVideos = userLike.map((videoLikes) => {
         return videoLikes.video
-    })
-    //[{videos : }]
-    if(!likedVideos?.length){
+    }).filter(video => !video)
+
+    if (!likedVideos?.length) {
         return res.status(200)
-        .json(
-            new ApiResponse(200 , "No liked videos" , [])
-        )
+            .json(
+                new ApiResponse(200, "No liked videos", [])
+            )
     }
     return res.status(200)
-    .json(
-        new ApiResponse(200 , "Liked video of user fetched" , likedVideos)
-    )
+        .json(
+            new ApiResponse(200, "Liked video of user fetched", likedVideos)
+        )
 
 })
 

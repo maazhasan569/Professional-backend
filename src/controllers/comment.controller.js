@@ -12,14 +12,16 @@ const getVideoComments = asyncHandler(async (req, res) => {
     const {videoId} = req.params
     const {page = 1, limit = 10 , sortBy , sortType} = req.query
     
-    const filterComments = Comment.findById(videoId)
-    if(!filterObj?.length){
-        return res.status(200)
-        .json(
-            new ApiResponse(200 , "No comments found" , {})
+   
+    const totalComments = await Comment.countDocuments({video : videoId})
+    if(!totalComments){
+       return res.status(200)
+       .json(
+        new ApiResponse(
+            200 , "No comments yet" , []
         )
+       )
     }
-    const countDocuments = await Comment.countDocuments(filterObj)
     let sortObj = {}
     if(sortBy){
         const sortDirection = sortType === "desc"? -1 : 1
@@ -30,7 +32,8 @@ const getVideoComments = asyncHandler(async (req, res) => {
     const skip = (page - 1)*limit
 
     const fetchedComments = await Comment
-    .find(filterComments)
+    .find({video : videoId})
+    .sort(sortObj)
     .skip(skip)
     .limit(limit)
     .exec()
@@ -49,7 +52,7 @@ const addComment = asyncHandler(async (req, res) => {
     if(!isValidObjectId(videoId)){
         throw new ApiError(400 , "Invalid video Id")
     }
-    if(!commentContent){
+    if(!content){
         throw new ApiError(400 , "Comment content is required")
     }
 
@@ -85,7 +88,7 @@ const updateComment = asyncHandler(async (req, res) => {
     throw new ApiError(400 , "Comment not found")
    }
 
-   if(req.user._id.toString() !== comment.owner ){
+   if(req.user._id.toString() !== comment.owner.toString() ){
     throw new ApiError(400 , "user dont have permission to edit this comment")
    }
    comment.content = content
@@ -117,7 +120,7 @@ const deleteComment = asyncHandler(async (req, res) => {
    if(req.user._id.toString() !== comment.owner ){
     throw new ApiError(400 , "user dont have permission to edit this comment")
    }
-   const delComment = Comment.findByIdAndDelete(commentId)
+   const delComment = await Comment.findByIdAndDelete(commentId)
    return res.status(200)
    .json(
     new ApiResponse(200,
