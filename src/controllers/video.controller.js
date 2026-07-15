@@ -165,8 +165,8 @@ const deleteVideo = asyncHandler(async (req, res) => {
 export {
     getAllVideos,
     publishAVideo,
-    getVideoById,
-    updateVideo,
+    getVideoById,  
+    AddVideoDetails,
+    uploadVideoThumbnail,
     deleteVideo,
-    togglePublishStatus
 }

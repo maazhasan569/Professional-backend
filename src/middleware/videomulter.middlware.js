@@ -22,7 +22,7 @@ const videoFilter = (req, file, cb) => {
     }
 }
 
-const uploadVideo = {
+export const uploadVideo = {
     storage,
     fileFilter : videoFilter,
 }
