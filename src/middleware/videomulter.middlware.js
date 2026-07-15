@@ -1,5 +1,5 @@
 import multer from "multer";
-import ApiError from "../utils/ApiError";
+
 
 const storage = multer.diskStorage({
     destination : function (req , file , cb) {
@@ -22,7 +22,7 @@ const videoFilter = (req, file, cb) => {
     }
 }
 
-export const uploadVideo = {
+export const uploadVideo = multer({
     storage,
     fileFilter : videoFilter,
-}
+})
