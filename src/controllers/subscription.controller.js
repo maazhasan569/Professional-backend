@@ -3,31 +3,40 @@ import { User } from "../models/users.model.js"
 import { Subscription } from "../models/subscription.model.js"
 import ApiError from "../utils/ApiError.js"
 import ApiResponse from "../utils/ApiResponse.js"
-import  asyncHandler from "../utils/asynhandler.js"
+import asyncHandler from "../utils/asynhandler.js"
 
 
 const toggleSubscription = asyncHandler(async (req, res) => {
     const { channelId } = req.params
-    const { isSubscribed } = req.body
+
     // TODO: toggle subscription
 
     const channel = await User.findById(channelId)
     if (!channel) {
         throw new ApiError(400, "channel doesnt exist try again")
     }
-    const subscriber = isSubscribed ? await Subscription.create({
-        subscriber: req.user_id,
-        channel: channelId
-    }) : await Subscription.findByIdAndDelete(
-        channelId
-    )
-
-    return res.status(200)
-        .json(
-            new ApiResponse(200, isSubscribed ? "New subsciber Added in DB" : "User unSubscribed the channel",
-                subscriber
+    const existingChannel = await Subscription.findOne({
+        channel: channelId,
+        subscriber: req.user._id
+    })
+    let getChannel;
+    if (existingChannel) {
+        getChannel = await Subscription.findByIdAndDelete(existingChannel._id)
+        return res.status(200)
+            .json(
+                new ApiResponse(200, "User unSubscribed to the channel", getChannel)
             )
-        )
+    } else {
+        getChannel = await Subscription.create({
+            channel: channelId,
+            subscriber: req.user._id
+        })
+        return res.status(200)
+            .json(
+                new ApiResponse(200, "User has Subscribed to the channel", getChannel)
+            )
+    }
+
 
 })
 

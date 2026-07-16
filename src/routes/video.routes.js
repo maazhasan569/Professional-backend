@@ -25,7 +25,10 @@ router
     .route("/:videoId")
     .get(getVideoById)
     .delete(deleteVideo)
-    .post(upload.single("thumbnail"), uploadVideoThumbnail);
+
+   router.post("/:videoId/thumbnail", upload.single("thumbnail") , uploadVideoThumbnail);
+   router.post("/:videoId/details", AddVideoDetails);
+
 
 
 

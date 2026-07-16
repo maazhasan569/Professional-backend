@@ -71,15 +71,16 @@ const publishAVideo = asyncHandler(async (req, res) => {
     }
 
     const videoFileUrl = await fileUpload(videoPath)
+    console.log(videoFileUrl)
     const saveVideo = await Video.create({
-        videoFileUrl
+        vidoesFile : videoFileUrl
     })
     if (!saveVideo) {
         throw new ApiError(500, "failed to save video in db")
     }
     return res.status(200)
     .json(
-        new ApiResponse(200, "video sucessfully saved!", {videoFileUrl})
+        new ApiResponse(200, "video sucessfully saved!", saveVideo)
     )
 
 })
@@ -87,7 +88,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
 const uploadVideoThumbnail = asyncHandler(async (req, res) => {
 
     const thumbnailPath = req.file.path;
-    const { videoId } = req.params
+    const { videoId } = req.params;
     if (!thumbnailPath) {
         throw new ApiError(400, "thumbnail file is required")
     }
@@ -99,7 +100,7 @@ const uploadVideoThumbnail = asyncHandler(async (req, res) => {
                 thumbnail: thumbnailFileUrl
             }
         },
-        { new: true }
+        { returnDocument: 'after' }
     )
 
     if (!findAndAddThumbnail) {
@@ -113,10 +114,13 @@ const uploadVideoThumbnail = asyncHandler(async (req, res) => {
 
 })
 const getVideoById = asyncHandler(async (req, res) => {
-    const { videoId } = req.params
+    const { videoId } = req.params;
     //TODO: get video by id
     //frontend would send the choosed video along with its data
     //fetch out the id from data and match
+    if(!isValidObjectId(videoId)){
+        throw new ApiError("invalid video id")
+    }
     const videoData = await findVideo(videoId)
     return res.status(200)
         .json(
@@ -140,7 +144,7 @@ const AddVideoDetails = asyncHandler(async (req, res) => {
                 description,
             }
         },
-        { new: true }
+        { returnDocument: 'after' }
 
     )
 

@@ -15,25 +15,13 @@ const videosSchema = new mongoose.Schema({
     },
     title : {   // cloudinary url
         type : String,
-        required : true
+        
     },
     description : {
         type : String,
     },
-    durations : {
-        type : Number,
-        required : true,
-        
-    },
-    views : {
-        type : Number,
-        required : true,
-        default : 0
-    },
-    isPublished : {
-        type : Boolean,
-        default : true
-    }
+    
+    
 
 } , {
     timeStamps : true
