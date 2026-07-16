@@ -46,14 +46,14 @@ const getUserChannelSubscribers = asyncHandler(async (req, res) => {
     const subscriberLists = await User.aggregate([
         {
             $match: {
-                channelId
+                _id: new mongoose.Types.ObjectId(channelId)
             }
         },
         {
             $lookup: {
                 from: "subscriptions",
                 localField: "_id",
-                foriegnField: "channel",
+                foreignField: "channel",
                 as: "subscribers"
             }
         },
@@ -62,19 +62,21 @@ const getUserChannelSubscribers = asyncHandler(async (req, res) => {
                 username: 1,
                 fullname: 1,
                 avatar: 1,
-                coverImg: 1
+                coverImg: 1,
+                subscribers : 1
             }
         }
 
     ])
 
+    console.log(subscriberLists)
     if (!subscriberLists?.length) {
         throw new ApiError(400, "Channel doesnt exist")
     }
 
 
     return res.status(200).json(
-        new ApiResponse(200, "Subcriber list fetched", !subscriberLists.subscribers.length ? {} : subscriberLists)
+        new ApiResponse(200, "Subcriber list fetched", !subscriberLists[0].subscribers.length ? [] : subscriberLists)
     )
 })
 
@@ -84,33 +86,34 @@ const getSubscribedChannels = asyncHandler(async (req, res) => {
     const channelList = await User.aggregate([
         {
             $match: {
-                subscriberId
+                _id: new mongoose.Types.ObjectId(subscriberId)
             }
         },
         {
             $lookup: {
                 from: "subscriptions",
                 localField: "_id",
-                foriegnField: "subscriber",
+                foreignField: "subscriber",
                 as: "channels"
             }
         },
         {
             $project: {
                 username: 1,
-                fullname: 1,
+                fullName: 1,
                 avatar: 1,
-                coverImg: 1
+                coverImg: 1,
+                channels : 1
             }
         }
     ])
     if (!channelList?.length) {
         throw new ApiError(400, "subscriber doesnt exist ")
     }
-
+    console.log()
     return res.status(200)
         .json(
-            new ApiResponse(200, "Channel fetched", !channelList.channels?.length ? {} : channelList)
+            new ApiResponse(200, "Channel fetched", !channelList[0].channels?.length ? [] : channelList)
         )
 
 })
@@ -118,5 +121,6 @@ const getSubscribedChannels = asyncHandler(async (req, res) => {
 export {
     toggleSubscription,
     getUserChannelSubscribers,
-    getSubscribedChannels
+    getSubscribedChannels,
+    
 }
