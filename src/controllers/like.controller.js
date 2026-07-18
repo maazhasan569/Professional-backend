@@ -80,10 +80,11 @@ const getLikedVideos = asyncHandler(async (req, res) => {
         video: { $exists: true }
     }).populate("video")
 
+    console.log(userLike)
     const likedVideos = userLike.map((videoLikes) => {
         return videoLikes.video
-    }).filter(video => !video)
-
+    })
+    console.log(likedVideos)
     if (!likedVideos?.length) {
         return res.status(200)
             .json(

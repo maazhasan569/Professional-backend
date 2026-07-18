@@ -107,7 +107,6 @@ const updateComment = asyncHandler(async (req, res) => {
 const deleteComment = asyncHandler(async (req, res) => {
     // TODO: delete a comment
      const {commentId} = req.params
-    const {content} = req.body
     if(!isValidObjectId(commentId)){
         throw new ApiError(400 , "Invalid comment Id")
     }
@@ -117,7 +116,7 @@ const deleteComment = asyncHandler(async (req, res) => {
     throw new ApiError(400 , "Comment not found")
    }
 
-   if(req.user._id.toString() !== comment.owner ){
+   if(req.user._id.toString() !== comment.owner.toString() ){
     throw new ApiError(400 , "user dont have permission to edit this comment")
    }
    const delComment = await Comment.findByIdAndDelete(commentId)
