@@ -34,11 +34,11 @@ const createPlaylist = asyncHandler(async (req, res) => {
             }
         }
     ])
-    const availableVideo = playlistVideo.map((ids) => {
-        return ids;
+    const availableVideo = playlistVideo.map((videos) => {
+        return videos._id.toString();
 
     })
-    const UnAvailableVideo = videoIds.filter((Ids) => {
+    const unAvailableVideo = videoIds.filter((ids) => {
         return !availableVideo.includes(ids.toString())
     })
 
@@ -56,20 +56,23 @@ const createPlaylist = asyncHandler(async (req, res) => {
     return res.status(200)
         .json(
             new ApiResponse(200, "Playlist created", {
-                availableVideo, UnAvailableVideo, playlist,
+                availableVideo, unAvailableVideo, playlist,
             })
         )
     //TODO: create playlist
 })
 
 const getUserPlaylists = asyncHandler(async (req, res) => {
-
-    const userPlaylists = await User.find({
-        "owner._id": req.user._id
+    
+    const {userId} = req.params;
+    const userPlaylists = await Playlist.find({
+        owner: userId
     })
+    
     //TODO: get user playlists
-    return res.status(
-        new ApiResponse(200, userPlaylists ? "Playlist fetched" : "No playlist created", userPlaylists)
+    return res.status(200)
+    .json(
+        new ApiResponse(200, userPlaylists ? "Playlist fetched" : "No playlist created", userPlaylists )
     )
 })
 
@@ -106,7 +109,7 @@ const addVideoToPlaylist = asyncHandler(async (req, res) => {
         playlistId,
         {
             $push: {
-                videos: { videoId }
+                videos:  videoId 
             }
         },
         { new: true }
@@ -141,7 +144,7 @@ const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
         playlistId,
         {
             $pull: {
-                videos: { videoId }
+                videos:  videoId 
             }
         },
         { new: true }
@@ -150,6 +153,10 @@ const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
         throw new ApiError(400, "An error  occured while removing video - playlist not found")
     }
 
+    return res.status(200)
+    .json(
+        new ApiResponse(200 , "video deleted from playlist" , removeVideo)
+    )
 })
 
 const deletePlaylist = asyncHandler(async (req, res) => {
@@ -165,7 +172,7 @@ const deletePlaylist = asyncHandler(async (req, res) => {
     return res.status(200)
         .json(
             new ApiResponse(
-                200, "Playlist deleted", deletePlaylist
+                200, "Playlist deleted", deletedPlaylist
             )
         )
     // TODO: delete playlist
