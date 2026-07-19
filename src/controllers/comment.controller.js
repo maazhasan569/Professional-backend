@@ -38,7 +38,10 @@ const getVideoComments = asyncHandler(async (req, res) => {
     .limit(limit)
     .exec()
 
-    
+    res.status(200)
+    .json(
+        new ApiResponse(200 , "fetched video comments" , fetchedComments)
+    )
 })
 
 const addComment = asyncHandler(async (req, res) => {
